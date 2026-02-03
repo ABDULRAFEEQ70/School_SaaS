@@ -4,7 +4,7 @@ from flask_jwt_extended import JWTManager
 from flask_cors import CORS
 from config import Config
 
-# Import the shared db instance from models (avoid creating multiple SQLAlchemy instances)
+
 from models import db
 
 # Initialize Flask app
@@ -17,11 +17,7 @@ migrate = Migrate(app, db)
 jwt = JWTManager(app)
 CORS(app)
 
-# Multi-tenancy setup
-# Multi-tenancy setup
-# from utils.tenants import init_tenants
-# tenants = FlaskTenants(app, init_tenants)
-# Register blueprints (single `routes.py` module defines the BPs)
+
 from routes import (
     auth_bp, students_bp, courses_bp,
     classes_bp, attendance_bp, grades_bp
