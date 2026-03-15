@@ -1,0 +1,36 @@
+---
+project_name: school-saas
+app_name: school-saas-app
+app_port: 5000
+docker_registry: 123456789012.dkr.ecr.us-east-1.amazonaws.com
+app_image: "{{ docker_registry }}/school-saas:latest"
+app_replicas: 3
+app_memory_limit: 1g
+app_memory_reservation: 512m
+
+docker_compose_version: "2.24.5"
+python_version: "3.9"
+
+database:
+  host: "{{ lookup('env', 'DB_HOST') | default('localhost', true) }}"
+  port: "{{ lookup('env', 'DB_PORT') | default('5432', true) }}"
+  name: "{{ lookup('env', 'DB_NAME') | default('school_saas', true) }}"
+  user: "{{ lookup('env', 'DB_USER') | default('postgres', true) }}"
+  password: "{{ lookup('env', 'DB_PASSWORD') | default('password', true) }}"
+
+redis:
+  host: "{{ lookup('env', 'REDIS_HOST') | default('localhost', true) }}"
+  port: "{{ lookup('env', 'REDIS_PORT') | default('6379', true) }}"
+  password: "{{ lookup('env', 'REDIS_PASSWORD') | default('', true) }}"
+
+monitoring:
+  enabled: true
+  cloudwatch_namespace: "SchoolSaaS"
+  log_retention_days: 30
+
+security:
+  enable_firewall: true
+  allowed_ssh_cidrs:
+    - 0.0.0.0/0
+  allowed_http_cidrs:
+    - 0.0.0.0/0

@@ -1,0 +1,78 @@
+---
+- name: Create nginx configuration
+  template:
+    src: nginx.conf.j2
+    dest: /opt/{{ app_name }}/docker-compose/nginx.conf
+    mode: '0644'
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+  notify: reload nginx
+
+- name: Create SSL directory
+  file:
+    path: /opt/{{ app_name }}/docker-compose/ssl
+    state: directory
+    mode: '0755'
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+
+- name: Create application backup script
+  template:
+    src: backup.sh.j2
+    dest: /opt/{{ app_name }}/backup.sh
+    mode: '0755'
+    owner: root
+    group: root
+
+- name: Setup backup cron job
+  cron:
+    name: "{{ app_name }} backup"
+    job: "/opt/{{ app_name }}/backup.sh"
+    user: root
+    minute: "0"
+    hour: "2"
+    state: present
+  when: backup.enabled
+
+- name: Create log rotation configuration
+  copy:
+    content: |
+      /opt/{{ app_name }}/*.log {
+        rotate {{ backup.retention_days }}
+        daily
+        compress
+        missingok
+        delaycompress
+        copytruncate
+        create 0644 {{ ansible_user }} {{ ansible_user }}
+      }
+    dest: /etc/logrotate.d/{{ app_name }}
+    mode: '0644'
+
+- name: Create systemd service for application monitoring
+  copy:
+    content: |
+      [Unit]
+      Description={{ app_name }} Application Monitor
+      After=network.target docker.service
+
+      [Service]
+      Type=simple
+      User={{ ansible_user }}
+      WorkingDirectory=/opt/{{ app_name }}/docker-compose
+      ExecStart=/usr/bin/docker compose ps
+      ExecStop=/usr/bin/docker compose down
+      Restart=on-failure
+      RestartSec=10
+
+      [Install]
+      WantedBy=multi-user.target
+    dest: /etc/systemd/system/{{ app_name }}.service
+    mode: '0644'
+  notify: daemon-reload
+
+- name: Enable application service
+  systemd:
+    name: "{{ app_name }}"
+    enabled: yes
+    daemon-reload: yes

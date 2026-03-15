@@ -1,0 +1,91 @@
+{
+  "agent": {
+    "metrics_collection_interval": 60,
+    "run_as_user": "root"
+  },
+  "metrics": {
+    "namespace": "{{ monitoring.cloudwatch_namespace }}",
+    "metrics_collected": {
+      "cpu": {
+        "measurement": [
+          "cpu_usage_active",
+          "cpu_usage_guest",
+          "cpu_usage_idle",
+          "cpu_usage_system",
+          "cpu_usage_user"
+        ],
+        "metrics_collection_interval": 60
+      },
+      "disk": {
+        "measurement": [
+          "disk_used_percent",
+          "disk_inodes_free",
+          "disk_inodes_used"
+        ],
+        "metrics_collection_interval": 60,
+        "resources": ["/"]
+      },
+      "mem": {
+        "measurement": [
+          "mem_used_percent",
+          "mem_available",
+          "mem_available_percent",
+          "mem_used",
+          "mem_free"
+        ],
+        "metrics_collection_interval": 60
+      },
+      "net": {
+        "measurement": [
+          "net_in",
+          "net_out"
+        ],
+        "metrics_collection_interval": 60
+      },
+      "swap": {
+        "measurement": [
+          "swap_used_percent",
+          "swap_free",
+          "swap_used"
+        ],
+        "metrics_collection_interval": 60
+      }
+    },
+    "append_dimensions": {
+      "InstanceId": "${aws:InstanceId}",
+      "InstanceType": "${aws:InstanceType}",
+      "Application": "{{ app_name }}",
+      "Environment": "{{ environment }}"
+    },
+    "aggregation_dimensions": [
+      ["InstanceId"],
+      ["Application", "Environment"]
+    ]
+  },
+  "logs": {
+    "logs_collected": {
+      "files": {
+        "collect_list": [
+          {
+            "file_path": "/var/log/syslog",
+            "log_group_name": "{{ app_name }}-syslog",
+            "log_stream_name": "{instance_id}",
+            "retention_in_days": {{ monitoring.log_retention_days }}
+          },
+          {
+            "file_path": "/var/log/docker/*.log",
+            "log_group_name": "{{ app_name }}-docker",
+            "log_stream_name": "{instance_id}",
+            "retention_in_days": {{ monitoring.log_retention_days }}
+          },
+          {
+            "file_path": "/opt/{{ app_name }}/*.log",
+            "log_group_name": "{{ app_name }}-application",
+            "log_stream_name": "{instance_id}",
+            "retention_in_days": {{ monitoring.log_retention_days }}
+          }
+        ]
+      }
+    }
+  }
+}

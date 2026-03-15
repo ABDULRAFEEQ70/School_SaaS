@@ -1,0 +1,27 @@
+---
+environment: production
+log_level: INFO
+app_replicas: 3
+app_memory_limit: 2g
+app_memory_reservation: 1g
+
+docker_image_tag: "{{ lookup('env', 'DOCKER_IMAGE_TAG') | default('latest', true) }}"
+app_image: "{{ docker_registry }}/school-saas:{{ docker_image_tag }}"
+
+health_check:
+  enabled: true
+  interval: 30s
+  timeout: 10s
+  retries: 3
+  start_period: 40s
+
+backup:
+  enabled: true
+  schedule: "0 2 * * *"
+  retention_days: 7
+
+monitoring:
+  cloudwatch_logs_enabled: true
+  cloudwatch_metrics_enabled: true
+  alarm_cpu_threshold: 80
+  alarm_memory_threshold: 90

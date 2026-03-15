@@ -1,0 +1,114 @@
+name: Infrastructure Provisioning
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Terraform action'
+        required: true
+        default: 'apply'
+        type: choice
+        options:
+          - apply
+          - destroy
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - staging
+          - production
+
+env:
+  AWS_REGION: us-east-1
+  TERRAFORM_VERSION: '1.6.0'
+
+jobs:
+  terraform:
+    name: Terraform ${{ github.event.inputs.action }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./terraform
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.TERRAFORM_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.TERRAFORM_AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+
+      - name: Terraform Init
+        id: init
+        run: terraform init
+
+      - name: Terraform Validate
+        id: validate
+        run: terraform validate
+
+      - name: Terraform Format Check
+        id: fmt
+        run: terraform fmt -check -recursive
+
+      - name: Terraform Plan
+        id: plan
+        if: github.event.inputs.action == 'apply'
+        run: |
+          terraform plan \
+            -var="environment=${{ github.event.inputs.environment }}" \
+            -var="ssh_key_name=${{ secrets.SSH_KEY_NAME }}" \
+            -out=tfplan \
+            -no-color
+
+      - name: Terraform Security Scan
+        if: github.event.inputs.action == 'apply'
+        uses: aquasecurity/tfsec-action@v0.1.0
+
+      - name: Terraform Apply
+        if: github.event.inputs.action == 'apply'
+        run: terraform apply -auto-approve tfplan
+
+      - name: Terraform Destroy
+        if: github.event.inputs.action == 'destroy'
+        run: |
+          terraform destroy \
+            -var="environment=${{ github.event.inputs.environment }}" \
+            -var="ssh_key_name=${{ secrets.SSH_KEY_NAME }}" \
+            -auto-approve
+
+      - name: Terraform Output
+        if: github.event.inputs.action == 'apply'
+        id: output
+        run: |
+          terraform output -json > outputs.json
+          cat outputs.json
+
+      - name: Save Terraform State
+        if: github.event.inputs.action == 'apply'
+        run: |
+          terraform output -json | tee outputs.json
+        continue-on-error: true
+
+      - name: Upload Terraform outputs as artifact
+        if: github.event.inputs.action == 'apply'
+        uses: actions/upload-artifact@v3
+        with:
+          name: terraform-outputs
+          path: terraform/outputs.json
+          retention-days: 7
+
+      - name: Post deployment notifications
+        if: always()
+        run: |
+          echo "Terraform ${{ github.event.inputs.action }} completed"
+          echo "Environment: ${{ github.event.inputs.environment }}"

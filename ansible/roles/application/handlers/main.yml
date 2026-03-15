@@ -1,0 +1,14 @@
+---
+- name: reload nginx
+  command: docker compose exec nginx nginx -s reload
+  args:
+    chdir: /opt/{{ app_name }}/docker-compose
+
+- name: daemon-reload
+  systemd:
+    daemon_reload: yes
+
+- name: restart application
+  systemd:
+    name: "{{ app_name }}"
+    state: restarted

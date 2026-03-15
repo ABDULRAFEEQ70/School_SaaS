@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  app-monitor:
+    build:
+      context: .
+      dockerfile: Dockerfile.monitor
+    container_name: school-saas-monitor
+    restart: unless-stopped
+    environment:
+      - APP_URL=http://app:5000
+      - CHECK_INTERVAL=60
+      - TIMEOUT=30
+      - MAX_FAILURES=3
+      - RECOVERY_ENABLED=true
+      - NOTIFICATION_ENABLED=true
+      - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL}
+      - EMAIL_ENABLED=false
+      - AWS_REGION=${AWS_REGION:-us-east-1}
+      - SNS_TOPIC_ARN=${SNS_TOPIC_ARN}
+      - K8S_ENABLED=false
+      - DOCKER_CONTAINER_NAME=school-saas-app
+      - DOCKER_SERVICE_NAME=school-saas
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./monitor_app.py:/app/monitor_app.py:ro
+      - ./monitor_config.json:/app/monitor_config.json:ro
+      - ./app_monitor.log:/app/app_monitor.log
+    networks:
+      - app-network
+    depends_on:
+      - app
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  app-network:
+    external: true

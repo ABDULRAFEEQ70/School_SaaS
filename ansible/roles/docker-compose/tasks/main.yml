@@ -1,0 +1,61 @@
+---
+- name: Create application directory
+  file:
+    path: /opt/{{ app_name }}
+    state: directory
+    mode: '0755'
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+
+- name: Create Docker Compose directory
+  file:
+    path: /opt/{{ app_name }}/docker-compose
+    state: directory
+    mode: '0755'
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+
+- name: Check if ECR login script exists
+  stat:
+    path: /root/.docker/config.json
+  register: docker_config
+
+- name: Login to AWS ECR
+  command: |
+    aws ecr get-login-password --region us-east-1 | \
+    docker login --username AWS --password-stdin {{ docker_registry }}
+  when: not docker_config.stat.exists
+  no_log: true
+  become: yes
+
+- name: Create Docker Compose environment file
+  template:
+    src: env.j2
+    dest: /opt/{{ app_name }}/docker-compose/.env
+    mode: '0600'
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+
+- name: Copy docker-compose.yml template
+  template:
+    src: docker-compose.yml.j2
+    dest: /opt/{{ app_name }}/docker-compose/docker-compose.yml
+    mode: '0644'
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+
+- name: Pull Docker images
+  command: docker compose -f /opt/{{ app_name }}/docker-compose/docker-compose.yml pull
+  args:
+    chdir: /opt/{{ app_name }}/docker-compose
+  register: docker_pull
+  changed_when: "'Pulled' in docker_pull.stdout"
+  retries: 3
+  delay: 5
+
+- name: Start Docker Compose services
+  command: docker compose -f /opt/{{ app_name }}/docker-compose/docker-compose.yml up -d
+  args:
+    chdir: /opt/{{ app_name }}/docker-compose
+  register: docker_up
+  changed_when: "'Creating' in docker_up.stdout or 'Recreating' in docker_up.stdout"

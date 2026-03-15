@@ -1,0 +1,20 @@
+[Unit]
+Description=School SaaS Application Monitor
+After=network.target docker.service
+Requires=docker.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/school-saas/monitor
+Environment="PATH=/usr/local/bin:/usr/bin:/bin"
+EnvironmentFile=-/opt/school-saas/monitor/.env
+ExecStart=/usr/bin/python3 -u /opt/school-saas/monitor/monitor_app.py --config /opt/school-saas/monitor/monitor_config.json
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=school-saas-monitor
+
+[Install]
+WantedBy=multi-user.target

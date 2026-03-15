@@ -1,0 +1,85 @@
+name: Deploy to EC2 via Ansible
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - staging
+          - production
+      docker_image_tag:
+        description: 'Docker image tag to deploy'
+        required: true
+        default: 'latest'
+
+env:
+  AWS_REGION: us-east-1
+  DOCKER_IMAGE_TAG: ${{ github.event.inputs.docker_image_tag }}
+
+jobs:
+  deploy:
+    name: Deploy to EC2
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install Ansible and AWS dependencies
+        run: |
+          pip install ansible boto3 botocore awscli
+
+      - name: Configure SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/school-saas-key.pem
+          chmod 600 ~/.ssh/school-saas-key.pem
+          ssh-keyscan -H github.com >> ~/.ssh/known_hosts
+
+      - name: Create Ansible vault password file
+        run: |
+          echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > .vault-pass
+          chmod 600 .vault-pass
+
+      - name: Update inventory for target environment
+        run: |
+          sed -i "s/tag:Environment: production/tag:Environment: ${{ github.event.inputs.environment }}/g" ansible/inventory/aws_ec2.yml
+
+      - name: Run Ansible playbook
+        run: |
+          cd ansible
+          ansible-playbook -i inventory/aws_ec2.yml deploy.yml \
+            --extra-vars "docker_image_tag=${{ env.DOCKER_IMAGE_TAG }}" \
+            --vault-password-file ../.vault-pass \
+            -vv
+
+      - name: Verify deployment health
+        run: |
+          cd ansible
+          ansible -i inventory/aws_ec2.yml tag_Application_school-saas_app -m uri \
+            -a "url=http://localhost:5000/health method=GET status_code=200 timeout=30"
+
+      - name: Get deployment status
+        run: |
+          cd ansible
+          ansible -i inventory/aws_ec2.yml tag_Application_school-saas_app -m shell \
+            -a "docker compose -f /opt/school-saas/docker-compose/docker-compose.yml ps"
+
+      - name: Cleanup SSH key
+        if: always()
+        run: rm -f ~/.ssh/school-saas-key.pem

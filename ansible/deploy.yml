@@ -1,0 +1,51 @@
+---
+- name: Deploy School SaaS application with Docker Compose
+  hosts: tag_Application_school-saas_app
+  become: yes
+  gather_facts: yes
+
+  pre_tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+      when: ansible_os_family == "Debian"
+
+    - name: Install required packages
+      package:
+        name:
+          - python3-pip
+          - python3-setuptools
+          - curl
+          - git
+        state: present
+
+  roles:
+    - role: docker
+      tags: docker
+
+    - role: docker-compose
+      tags: docker-compose
+
+    - role: application
+      tags: application
+
+    - role: monitoring
+      tags: monitoring
+      when: monitoring.enabled
+
+  post_tasks:
+    - name: Verify application health
+      uri:
+        url: "http://localhost:{{ app_port }}/health"
+        method: GET
+        status_code: 200
+        timeout: 30
+      register: health_check
+      retries: 5
+      delay: 10
+      until: health_check.status == 200
+
+    - name: Display application status
+      debug:
+        msg: "Application is healthy and accessible at http://localhost:{{ app_port }}"

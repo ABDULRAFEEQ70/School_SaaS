@@ -1,0 +1,37 @@
+{
+  "app_url": "http://localhost:5000",
+  "health_endpoint": "/health",
+  "check_interval": 60,
+  "timeout": 30,
+  "max_failures": 3,
+  "recovery_enabled": true,
+  "notification_enabled": true,
+  "slack_webhook_url": "https://hooks.slack.com/services/YOUR/WEBHOOK/URL",
+  "email_notifications": {
+    "enabled": false,
+    "smtp_server": "smtp.gmail.com",
+    "smtp_port": 587,
+    "email_user": "your-email@gmail.com",
+    "email_password": "your-app-password",
+    "to_emails": ["admin@example.com", "devops@example.com"],
+    "from_email": "monitor@school-saas.com"
+  },
+  "aws": {
+    "region": "us-east-1",
+    "sns_topic_arn": "arn:aws:sns:us-east-1:123456789012:school-saas-alerts"
+  },
+  "recovery_actions": {
+    "restart_container": true,
+    "restart_service": true,
+    "scale_up": false
+  },
+  "docker": {
+    "container_name": "school-saas-app",
+    "service_name": "school-saas"
+  },
+  "kubernetes": {
+    "enabled": false,
+    "namespace": "school-saas",
+    "deployment_name": "school-saas-app"
+  }
+}

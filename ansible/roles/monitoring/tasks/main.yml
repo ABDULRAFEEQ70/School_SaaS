@@ -1,0 +1,77 @@
+---
+- name: Install CloudWatch Agent
+  shell: |
+    wget https://s3.amazonaws.com/amazoncloudwatch-agent/ubuntu/amd64/latest/amazon-cloudwatch-agent.deb
+    dpkg -i -E ./amazon-cloudwatch-agent.deb
+    rm amazon-cloudwatch-agent.deb
+  args:
+    creates: /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl
+  register: cw_agent_install
+  changed_when: cw_agent_install.rc == 0
+
+- name: Create CloudWatch Agent configuration directory
+  file:
+    path: /opt/aws/amazon-cloudwatch-agent/etc
+    state: directory
+    mode: '0755'
+
+- name: Configure CloudWatch Agent
+  template:
+    src: cloudwatch-agent-config.json.j2
+    dest: /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
+    mode: '0644'
+  notify: restart cloudwatch-agent
+
+- name: Start CloudWatch Agent
+  command: /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
+  changed_when: false
+  when: cw_agent_install.changed
+
+- name: Create CloudWatch Alarms using boto3
+  block:
+    - name: Install boto3 for Python
+      pip:
+        name: boto3
+        state: present
+        executable: pip3
+
+    - name: Create CloudWatch alarm for high CPU
+      cloudwatch_metric_alarm:
+        state: present
+        region: us-east-1
+        namespace: AWS/EC2
+        metric_name: CPUUtilization
+        statistic: Average
+        period: 300
+        evaluation_periods: 2
+        threshold: {{ monitoring.alarm_cpu_threshold }}
+        comparison_operator: GreaterThanOrEqualToThreshold
+        alarm_description: "High CPU utilization for {{ app_name }}"
+        alarm_actions:
+          - arn:aws:sns:us-east-1:123456789012:{{ app_name }}-alerts
+        dimensions:
+          InstanceId: "{{ ansible_ec2_instance_id }}"
+      when: monitoring.cloudwatch_metrics_enabled
+
+    - name: Create CloudWatch alarm for high memory
+      cloudwatch_metric_alarm:
+        state: present
+        region: us-east-1
+        namespace: CWAgent
+        metric_name: mem_used_percent
+        statistic: Average
+        period: 300
+        evaluation_periods: 2
+        threshold: {{ monitoring.alarm_memory_threshold }}
+        comparison_operator: GreaterThanOrEqualToThreshold
+        alarm_description: "High memory utilization for {{ app_name }}"
+        alarm_actions:
+          - arn:aws:sns:us-east-1:123456789012:{{ app_name }}-alerts
+        dimensions:
+          InstanceId: "{{ ansible_ec2_instance_id }}"
+      when: monitoring.cloudwatch_metrics_enabled
+
+- name: Setup log forwarding to CloudWatch
+  command: /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a start -m ec2
+  when: monitoring.cloudwatch_logs_enabled
+  changed_when: false

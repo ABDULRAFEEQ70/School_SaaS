@@ -1,0 +1,11 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: school-saas-pdb
+  namespace: school-saas
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: school-saas
+      component: app
