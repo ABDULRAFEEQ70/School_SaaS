@@ -1,4 +1,9 @@
+<<<<<<< Updated upstream
 .PHONY: help terraform-init terraform-plan terraform-apply terraform-destroy \
+=======
+.PHONY: help celery-worker celery-beat celery-flower \
+        terraform-init terraform-plan terraform-apply terraform-destroy \
+>>>>>>> Stashed changes
         ansible-deploy ansible-check ansible-install \
         k8s-deploy k8s-undeploy k8s-status \
         monitor-start monitor-stop monitor-status monitor-test \
@@ -8,6 +13,14 @@
 help:
 	@echo "School SaaS Infrastructure Automation"
 	@echo ""
+<<<<<<< Updated upstream
+=======
+	@echo "Celery:"
+	@echo "  make celery-worker    Start Celery worker"
+	@echo "  make celery-beat      Start Celery beat scheduler"
+	@echo "  make celery-flower    Start Celery monitoring dashboard"
+	@echo ""
+>>>>>>> Stashed changes
 	@echo "Terraform:"
 	@echo "  make terraform-init   Initialize Terraform"
 	@echo "  make terraform-plan   Create Terraform plan"
@@ -92,6 +105,19 @@ docker-build:
 docker-push:
 	docker push 123456789012.dkr.ecr.us-east-1.amazonaws.com/school-saas:latest
 
+<<<<<<< Updated upstream
+=======
+# Celery commands
+celery-worker:
+	celery -A celery_app worker --loglevel=info
+
+celery-beat:
+	celery -A celery_app beat --loglevel=info
+
+celery-flower:
+	celery -A celery_app flower
+
+>>>>>>> Stashed changes
 # Clean up
 clean:
 	rm -rf .terraform *.tfstate *.tfstate.backup

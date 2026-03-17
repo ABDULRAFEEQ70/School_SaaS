@@ -1,8 +1,7 @@
-from flask import jsonify
+from flask import jsonify, request
 from functools import wraps
 from flask_jwt_extended import verify_jwt_in_request, get_jwt_identity
 from models import User, Tenant
-from flask_tenants import current_tenant
 
 def success_response(data, status_code=200):
     """Standardized success response"""
@@ -44,18 +43,16 @@ def teacher_required(fn):
 
 def get_current_tenant():
     """Get the current tenant from the request"""
-    return current_tenant._get_current_object() if current_tenant else None
+    tenant_id = request.headers.get('X-Tenant-ID')
+    if not tenant_id:
+        return None
+    try:
+        return Tenant.query.get(int(tenant_id))
+    except (ValueError, TypeError):
+        return None
 
 def init_tenants(app):
-    """Initialize multi-tenancy"""
-    from flask_tenants import TenantManager
-    tenant_manager = TenantManager(app)
-
-    @tenant_manager.tenant_resolver
-    def tenant_resolver(request):
-        tenant_schema = request.headers.get('X-Tenant-ID')
-        if not tenant_schema:
-            return None
-        return Tenant.query.filter_by(schema_name=tenant_schema).first()
-
-    return tenant_manager
+    """Initialize multi-tenancy (basic implementation)"""
+    # This is a basic initialization for multi-tenancy support
+    # For production, consider using a dedicated library
+    return True

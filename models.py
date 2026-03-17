@@ -1,12 +1,11 @@
 from flask_sqlalchemy import SQLAlchemy
-from flask_tenants import TenantMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 
 db = SQLAlchemy()
 
 # Tenant Model for multi-tenancy
-class Tenant(TenantMixin, db.Model):
+class Tenant(db.Model):
     __tablename__ = 'tenants'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
