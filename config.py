@@ -1,8 +1,13 @@
 import os
-from dotenv import load_dotenv
 
-# Load .env files when available
-load_dotenv()
+# Load .env files when available (optional dependency)
+try:
+    from dotenv import load_dotenv
+except ImportError:
+    load_dotenv = None
+
+if load_dotenv:
+    load_dotenv()
 
 
 class Config:
