@@ -1,10 +1,22 @@
-from celery_app import celery
-import time
 import logging
+import time
 
 logger = logging.getLogger(__name__)
 
-@celery.task(bind=True)
+try:
+    from celery_app import celery
+except ImportError:
+    celery = None
+
+
+def _celery_task(*args, **kwargs):
+    if celery is not None:
+        return celery.task(*args, **kwargs)
+    def decorator(fn):
+        return fn
+    return decorator
+
+@_celery_task(bind=True)
 def send_email_notification(self, recipient, subject, body):
     """
     Example task for sending email notifications asynchronously.
@@ -29,7 +41,7 @@ def send_email_notification(self, recipient, subject, body):
         logger.error(f"Failed to send email to {recipient}: {str(e)}")
         raise self.retry(countdown=60, exc=e)
 
-@celery.task(bind=True)
+@_celery_task(bind=True)
 def process_bulk_data_import(self, data_file_path, user_id):
     """
     Example task for processing bulk data imports asynchronously.
@@ -53,7 +65,7 @@ def process_bulk_data_import(self, data_file_path, user_id):
         logger.error(f"Bulk import failed: {str(e)}")
         raise self.retry(countdown=300, exc=e)  # Retry after 5 minutes
 
-@celery.task(bind=True)
+@_celery_task(bind=True)
 def generate_report(self, report_type, parameters):
     """
     Example task for generating reports asynchronously.
@@ -78,7 +90,7 @@ def generate_report(self, report_type, parameters):
         logger.error(f"Report generation failed: {str(e)}")
         raise
 
-@celery.task(bind=True)
+@_celery_task(bind=True)
 def cleanup_expired_data(self):
     """
     Periodic task to clean up expired data.

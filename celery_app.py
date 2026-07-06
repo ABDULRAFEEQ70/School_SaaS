@@ -50,5 +50,4 @@ def make_celery(flask_app):
     return celery
 
 
-# Import tasks to register them
-import tasks
+# Celery task modules are registered via the `include` list and imported only when Celery is used.
