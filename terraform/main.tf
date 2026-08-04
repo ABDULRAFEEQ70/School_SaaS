@@ -40,9 +40,9 @@ data "aws_ami" "amazon_linux_2" {
 module "vpc" {
   source = "./modules/vpc"
 
-  project_name     = var.project_name
-  environment      = var.environment
-  vpc_cidr         = var.vpc_cidr
+  project_name       = var.project_name
+  environment        = var.environment
+  vpc_cidr           = var.vpc_cidr
   availability_zones = var.availability_zones
 }
 
@@ -65,16 +65,16 @@ module "iam" {
 module "ec2" {
   source = "./modules/ec2"
 
-  project_name          = var.project_name
-  environment           = var.environment
-  instance_count        = var.instance_count
-  instance_type         = var.instance_type
-  ami_id                = data.aws_ami.amazon_linux_2.id
-  subnet_ids            = module.vpc.private_subnet_ids
-  security_group_ids    = [module.security_groups.ec2_sg_id]
-  iam_instance_profile  = module.iam.ec2_instance_profile_name
-  key_name              = var.ssh_key_name
-  enable_monitoring     = true
+  project_name         = var.project_name
+  environment          = var.environment
+  instance_count       = var.instance_count
+  instance_type        = var.instance_type
+  ami_id               = data.aws_ami.amazon_linux_2.id
+  subnet_ids           = module.vpc.private_subnet_ids
+  security_group_ids   = [module.security_groups.ec2_sg_id]
+  iam_instance_profile = module.iam.ec2_instance_profile_name
+  key_name             = var.ssh_key_name
+  enable_monitoring    = true
 
   user_data = <<-EOF
               #!/bin/bash

@@ -250,10 +250,7 @@ School_SaaS/
     ├── README.md ...................... Main docs
     ├── INFRASTRUCTURE_README.md ....... Production
     ├── IMPLEMENTATION_SUMMARY.md ...... Architecture
-    └── ... (other docs)
-```
-
----
+    └── ... (other do
 
 ## 🎓 Learning Resources
 

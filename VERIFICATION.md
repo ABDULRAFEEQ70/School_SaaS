@@ -127,8 +127,8 @@ SQLALCHEMY_DATABASE_URI=sqlite:///data.db
 ### Test 1: Register a User
 ```powershell
 $body = @{
-    email = "test@example.com"
-    password = "password123"
+    email = "cellsreal0@gmail.com"
+    password = "RealCells7£"
     first_name = "Test"
     last_name = "User"
     user_type = 3
