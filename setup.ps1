@@ -72,6 +72,20 @@ if (Test-Path "requirements.txt") {
     exit 1
 }
 
+# Create .env file from example if missing
+Write-Host ""
+Write-Host "Ensuring .env file exists..." -ForegroundColor Yellow
+$envFile = ".env"
+$envExample = ".env.example"
+if (-not (Test-Path $envFile) -and (Test-Path $envExample)) {
+    Copy-Item $envExample $envFile
+    Write-Host "✓ Created .env from .env.example" -ForegroundColor Green
+} elseif (-not (Test-Path $envFile)) {
+    Write-Host "⚠ .env.example missing; please create .env manually" -ForegroundColor Yellow
+} else {
+    Write-Host ".env already exists, skipping" -ForegroundColor Yellow
+}
+
 # Set FLASK_APP environment variable
 Write-Host ""
 Write-Host "Setting FLASK_APP environment variable..." -ForegroundColor Yellow

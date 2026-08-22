@@ -73,6 +73,19 @@ if exist "requirements.txt" (
 )
 echo.
 
+REM Create .env file from example if missing
+if not exist ".env" (
+    if exist ".env.example" (
+        copy ".env.example" ".env"
+        echo [OK] Created .env from .env.example
+    ) else (
+        echo WARNING: .env.example not found; please create .env manually
+    )
+) else (
+    echo .env already exists, skipping
+)
+
+echo.
 REM Set FLASK_APP
 echo Setting FLASK_APP environment variable...
 set FLASK_APP=app.py

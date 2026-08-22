@@ -102,7 +102,13 @@ School_SaaS/
 
 ## 📝 Environment Variables
 
-The app uses `.env` file for local configuration (already set up for you). Key variables:
+The app uses a `.env` file for local configuration. Copy `.env.example` to `.env` and adjust values for your environment.
+
+```powershell
+copy .env.example .env
+```
+
+Example local environment values:
 
 ```env
 FLASK_APP=app.py
@@ -110,13 +116,15 @@ FLASK_ENV=development
 SECRET_KEY=dev-secret-key
 JWT_SECRET_KEY=dev-jwt-secret
 SQLALCHEMY_DATABASE_URI=sqlite:///data.db
+CELERY_BROKER_URL=redis://localhost:6379/0
+CELERY_RESULT_BACKEND=redis://localhost:6379/0
 
 # Optional - leave empty to disable
-CELERY_BROKER_URL=
 OPENAI_API_KEY=
+OPENAI_MODEL=gpt-4-mini
 ```
 
-See `.env` file for all available options.
+See `.env.example` for all available options.
 
 ## 🚀 Running the Application
 
@@ -190,13 +198,20 @@ flask shell
 ```
 
 ### Running Background Jobs (Celery)
-Requires Redis:
-```powershell
-# In one terminal
-celery -A app.celery worker --loglevel=info
+Requires Redis. If you are using a local Redis instance, ensure it is running before starting Celery.
 
-# In another terminal
+```powershell
+# In one terminal, start the Celery worker
+celery -A celery_app worker --loglevel=info
+
+# In another terminal, start the Flask app
 python app.py
+```
+
+If you are using Docker Compose, the local `docker-compose.yml` already defines a `redis` service and a `celery` worker service.
+
+```powershell
+docker compose up -d redis celery
 ```
 
 ### Reset Database

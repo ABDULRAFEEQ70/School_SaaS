@@ -49,5 +49,3 @@ def make_celery(flask_app):
     celery.Task = ContextTask
     return celery
 
-
-# Celery task modules are registered via the `include` list and imported only when Celery is used.

@@ -11,11 +11,7 @@ if load_dotenv:
 
 
 class Config:
-    """
-    Flask configuration class that reads from environment variables.
-    Sensible defaults are provided for local development.
-    """
-    
+   
     # Core Flask Configuration
     SECRET_KEY = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
     DEBUG = os.getenv('FLASK_ENV') == 'development'
@@ -23,7 +19,7 @@ class Config:
     # SQLAlchemy
     SQLALCHEMY_DATABASE_URI = os.getenv(
         'SQLALCHEMY_DATABASE_URI', 
-        'sqlite:///data.db'  # SQLite for local development
+        'sqlite:///data.db'  
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
